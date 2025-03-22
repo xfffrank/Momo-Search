@@ -1,0 +1,106 @@
+from dataclasses import dataclass
+import urllib.parse
+from json import JSONDecodeError
+import requests
+from typing import List
+
+import faiss
+import numpy as np
+
+from config import IP_ADDRESS, LANGUAGE, TIME_RANGE
+
+
+@dataclass
+class Document:
+    title: str = ""
+    url: str = ""
+    snippet: str = ""
+    content: str = ""
+
+
+def encode_url(url: str) -> str:
+    return urllib.parse.quote(url)
+
+
+def decode_url(url: str) -> str:
+    return urllib.parse.unquote(url)
+
+
+def search(query: str, num_results: int) -> List[Document]:
+    headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0",
+               "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+               "Accept-Language": "en-US,en;q=0.5"}
+    
+    request_str = f"/search?q={encode_url(query)}&time_range={TIME_RANGE}&format=json&language={LANGUAGE}&pageno="
+    pageno = 1
+    base_url = IP_ADDRESS
+    res = []
+    while len(res) < num_results:
+        url = base_url + request_str + str(pageno)
+        response = requests.get(url, headers=headers)
+
+        try:
+            response_dict = response.json()
+        except JSONDecodeError:
+            raise ValueError("JSONDecodeError: Please ensure that the SearXNG instance can return data in JSON format")
+
+        result_dicts = response_dict["results"]
+        if not result_dicts:
+            break
+
+        for result in result_dicts:
+            if "content" in result:
+                doc = Document(title=result["title"], url=result["url"], snippet=result["content"])
+                res.append(doc)
+
+                if len(res) == num_results:
+                    break
+
+        pageno += 1
+    
+    return res
+
+
+class FaissRetriever:
+    def __init__(self, embedding_model, num_candidates: int = 50, sim_threshold: float = 0.4) -> None:
+        self.embedding_model = embedding_model
+        self.num_candidates = num_candidates
+        self.sim_threshold = sim_threshold
+        self.embeddings_dim = embedding_model.get_sentence_embedding_dimension()
+        self.reset_state()
+    
+    def reset_state(self) -> None:
+        self.index = faiss.IndexFlatIP(self.embeddings_dim)
+        self.documents = []
+    
+    def encode_doc(self, doc: str | List[str]) -> np.ndarray:
+        return self.embedding_model.encode(doc, normalize_embeddings=True)
+
+    def add_documents(self, documents: List[Document]) -> None:
+        if not documents:
+            return
+        
+        self.reset_state()
+        self.documents = documents
+        doc_embeddings = self.encode_doc([doc.snippet for doc in documents])
+        self.index.add(doc_embeddings)
+    
+    def filter_by_sim(self, distances: np.ndarray, indices: np.ndarray) -> np.ndarray:
+        cutoff_idx = -1
+        for idx, sim in enumerate(distances):
+            if sim > self.sim_threshold:
+                cutoff_idx = idx
+            else:
+                break
+        top_sim_indices = indices[:cutoff_idx + 1]
+        return top_sim_indices
+
+    def get_relevant_documents(self, query: str) -> List[Document]:
+        if not self.documents:
+            raise ValueError('No documents added to the retriever')
+        query_embedding = self.encode_doc(query)
+        D, I = self.index.search(query_embedding.reshape(1, -1), self.num_candidates)
+        top_indices = self.filter_by_sim(D[0], I[0])
+        print(f"Found {len(top_indices)} relevant documents")
+
+        return [self.documents[idx] for idx in top_indices]
