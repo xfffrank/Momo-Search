@@ -48,8 +48,9 @@ python run_bot.py
 You can always change the daily query in `daily_query.txt` and the scheduled time in `config.py`.
 
 ## Roadmap
+- [x] Perform web search and retrieve relevant sources as LLM context.
 - [x] Connect to Telegram bot for query execution and daily digest notification.
-- [x] Return messages in Markdown format.
+- [ ] Return messages in Markdown format.
 - [ ] Refine search keywords with LLM.
 - [ ] Auto change the search time range based on the query.
 - [ ] Crawl website content for top N relevant sources.
