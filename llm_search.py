@@ -6,7 +6,7 @@ from agno.agent import Agent
 from agno.models.openai.like import OpenAILike
 from sentence_transformers import SentenceTransformer
 
-from utils import search, FaissRetriever
+from utils import search, FaissRetriever, Document, convert_to_telegram_markdown, escape_special_chars
 from config import OPENAI_LIKE_API_KEY, OPENAI_LIKE_BASE_URL, MODEL_ID, SEARCH_NUM_RESULTS
 
 
@@ -54,20 +54,31 @@ class LLMSearch:
             f"[webpage {i+1} begin]{source}[webpage {i+1} end]" for i, source in enumerate(sources)])
         return sources_str
     
-    def format_llm_response(self, response: str, urls: List[str]) -> str:
-        citation_str = "\n".join([f"[citation:{i+1}]: {url}" for i, url in enumerate(urls)])
-        return f"{response}\n\n{citation_str}"
+    def format_llm_response(self, llm_ans: str, docs: List[Document]) -> str:
+        llm_ans = convert_to_telegram_markdown(llm_ans)
 
-    def analyze_and_summarize(self, query: str, response) -> str:
+        citations = []
+        num_char_limit = 20
+        for i, doc in enumerate(docs):
+            if len(doc.title) > num_char_limit:
+                title = f"{doc.title[:num_char_limit]}..."
+            else:
+                title = doc.title
+            title = escape_special_chars(title)
+            citations.append(f"{i+1}\. [{title}]({doc.url})")
+
+        # hide the citation part
+        citation_str = '\n'.join([f'>{citation}' for citation in citations]) + '||'
+        return f"{llm_ans}\n\n{citation_str}"
+
+    def analyze_and_summarize(self, query: str, response: List[Document]) -> str:
         formatted_sources = self.format_sources([data.snippet for data in response])
         cur_date = self.get_today_date()
         prompt = self.format_prompt(formatted_sources, query, cur_date)
         print(f'Prompt: {prompt}')
         
         llm_res = self.agent.run(prompt)
-
-        urls = [data.url for data in response]
-        return self.format_llm_response(llm_res.content, urls)
+        return self.format_llm_response(llm_res.content, response)
 
     def process_query(self, query: str, mode: str = "speed"):
         response = search(query, self.max_sources)
@@ -80,4 +91,5 @@ class LLMSearch:
 if __name__ == "__main__":
     agent = LLMSearch()
     query = "NVIDIA stock news"
-    agent.process_query(query)
+    ans = agent.process_query(query)
+    print(ans)

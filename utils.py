@@ -3,6 +3,7 @@ import urllib.parse
 from json import JSONDecodeError
 import requests
 from typing import List
+import re
 
 import faiss
 import numpy as np
@@ -24,6 +25,45 @@ def encode_url(url: str) -> str:
 
 def decode_url(url: str) -> str:
     return urllib.parse.unquote(url)
+
+
+def escape_special_chars(text):
+    special_chars = r'_\*\[\]\(\)~`>#\+\-=\|\{\}\.\!'
+    return re.sub(f'([{special_chars}])', r'\\\1', text)
+
+
+def convert_to_telegram_markdown(text):
+    # Split the text into lines
+    lines = text.split('\n')
+    result = []
+    
+    for line in lines:
+        line = line.strip()
+        # Process headers (### becomes bold)
+        if line.startswith('### '):
+            header_text = line[4:].strip()
+            escaped_text = escape_special_chars(header_text)
+            result.append(f"*{escaped_text}*\n")
+        
+        # Process bullet points
+        elif line.strip().startswith('- '):
+            bullet_text = line.strip()[2:]
+            if '[citation:' in bullet_text:
+                # Replace [citation:X] with [X]
+                bullet_text = re.sub(r'\[citation:(\d+)\]', r'[\1]', bullet_text)
+            escaped_text = escape_special_chars(bullet_text)
+            result.append(f"• {escaped_text}\n")
+        
+        # Process horizontal rules (---)
+        elif line.strip() == '---':
+            result.append("——————————————————————\n")
+        
+        # Process other lines
+        else:
+            escaped_text = escape_special_chars(line)
+            result.append(f"{escaped_text}\n")
+    
+    return ''.join(result)
 
 
 def search(query: str, num_results: int) -> List[Document]:
