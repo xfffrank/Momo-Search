@@ -50,7 +50,7 @@ You can always change the daily query in `daily_query.txt` and the scheduled tim
 ## Roadmap
 - [x] Perform web search and retrieve relevant sources as LLM context.
 - [x] Connect to Telegram bot for query execution and daily digest notification.
-- [ ] Return messages in Markdown format.
+- [x] Return messages in Markdown format.
 - [ ] Refine search keywords with LLM.
 - [ ] Auto change the search time range based on the query.
 - [ ] Crawl website content for top N relevant sources.
