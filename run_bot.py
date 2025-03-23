@@ -51,17 +51,8 @@ async def perform_search(update: Update, query: str) -> None:
     await update.message.reply_text("🔍 Searching and processing your query. This may take a moment...")
     
     try:
-        # Process the query
         response = search_engine.process_query(query, mode="speed")
-        
-        # Split response if needed (Telegram has a 4096 character limit per message)
-        if len(response) <= 4000:
-            await update.message.reply_text(response)
-        else:
-            # Split the response into chunks
-            chunks = [response[i:i+4000] for i in range(0, len(response), 4000)]
-            for i, chunk in enumerate(chunks):
-                await update.message.reply_text(f"Part {i+1}/{len(chunks)}:\n\n{chunk}")
+        await update.message.reply_text(response, parse_mode="MarkdownV2", disable_web_page_preview=True)
     
     except Exception as e:
         logger.error(f"Error processing query: {e}", exc_info=True)
@@ -70,14 +61,7 @@ async def perform_search(update: Update, query: str) -> None:
 
 async def reply_msg(context: ContextTypes.DEFAULT_TYPE, response: str) -> None:
     try:
-        # Split response if needed (Telegram has a 4096 character limit per message)
-        if len(response) <= 4000:
-            await context.bot.send_message(chat_id=CHAT_ID, text=response)
-        else:
-            # Split the response into chunks
-            chunks = [response[i:i+4000] for i in range(0, len(response), 4000)]
-            for i, chunk in enumerate(chunks):
-                await context.bot.send_message(chat_id=CHAT_ID, text=f"Part {i+1}/{len(chunks)}:\n\n{chunk}")
+        await context.bot.send_message(chat_id=CHAT_ID, text=response, parse_mode="MarkdownV2", disable_web_page_preview=True)
     except Exception as e:
         logger.error(f"Failed to send message to chat {CHAT_ID}: {e}")
 
