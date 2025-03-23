@@ -15,4 +15,4 @@ SCHEDULED_TIME = [9, 0, 0]
 SEARCH_NUM_RESULTS = 50
 IP_ADDRESS = "http://localhost:8080"
 LANGUAGE = "zh"
-TIME_RANGE = "day"
+TIME_RANGE = "week"
