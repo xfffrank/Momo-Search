@@ -28,9 +28,15 @@ def decode_url(url: str) -> str:
 
 
 def escape_special_chars(text):
+    # reference: https://core.telegram.org/bots/api#markdownv2-style
     special_chars = r'_\*\[\]\(\)~`>#\+\-=\|\{\}\.\!'
     return re.sub(f'([{special_chars}])', r'\\\1', text)
 
+
+def escape_special_chars_for_link(text):
+    # Inside the (...) part of the inline link and custom emoji definition, 
+    # all ')' and '\' must be escaped with a preceding '\' character.
+    return re.sub(r'([\\)])', r'\\\1', text)
 
 def convert_to_telegram_markdown(text):
     # Split the text into lines
@@ -39,7 +45,7 @@ def convert_to_telegram_markdown(text):
     
     for line in lines:
         line = line.strip()
-        # Process headers (### becomes bold)
+        # Process headers
         if line.startswith('### '):
             header_text = line[4:].strip()
             escaped_text = escape_special_chars(header_text)
@@ -118,6 +124,7 @@ class FaissRetriever:
 
     def add_documents(self, documents: List[Document]) -> None:
         if not documents:
+            print('No documents added to the retriever')
             return
         
         self.reset_state()

@@ -6,7 +6,8 @@ from agno.agent import Agent
 from agno.models.openai.like import OpenAILike
 from sentence_transformers import SentenceTransformer
 
-from utils import search, FaissRetriever, Document, convert_to_telegram_markdown, escape_special_chars
+from utils import (search, FaissRetriever, Document, convert_to_telegram_markdown, 
+                   escape_special_chars, escape_special_chars_for_link)
 from config import OPENAI_LIKE_API_KEY, OPENAI_LIKE_BASE_URL, MODEL_ID, SEARCH_NUM_RESULTS
 
 
@@ -55,7 +56,9 @@ class LLMSearch:
         return sources_str
     
     def format_llm_response(self, llm_ans: str, docs: List[Document]) -> str:
+        print(f'LLM Answer: \n{llm_ans}')
         llm_ans = convert_to_telegram_markdown(llm_ans)
+        print(f'LLM Answer(converted): \n{llm_ans}')
 
         citations = []
         num_char_limit = 20
@@ -65,10 +68,12 @@ class LLMSearch:
             else:
                 title = doc.title
             title = escape_special_chars(title)
-            citations.append(f"{i+1}\. [{title}]({doc.url})")
+            url = escape_special_chars_for_link(doc.url)
+            citations.append(f"{i+1}\. [{title}]({url})")
 
         # hide the citation part
         citation_str = '\n'.join([f'>{citation}' for citation in citations]) + '||'
+        print(f'Citation: \n{citation_str}')
         return f"{llm_ans}\n\n{citation_str}"
 
     def analyze_and_summarize(self, query: str, response: List[Document]) -> str:
