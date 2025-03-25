@@ -79,13 +79,35 @@ class LLMSearch:
         
         llm_res = self.agent.run(prompt)
         return self.format_llm_response(llm_res.content, response)
+    
+    def rewrite_query(self, query: str) -> str:
+        prompt = f"""
+            Today is {self.get_today_date()}.
+            Provide a better search query for web search engine to answer the given question, end the queries with '**'. 
+            Unless the user requests otherwise, your response should be in the same language as the user's question.
+            Question: {query} Answer:
+        """
+        res = self.agent.run(prompt).content
+        top_query = res.split('\n')[0].replace('**', '')
+        print(f'Original Query: {query}')
+        print(f'Query Rewrite: {top_query}')
+        return top_query
 
-    def process_query(self, query: str, mode: str = "speed"):
-        response = search(query, self.max_sources)
+    def process_query(self, user_query: str, query_rewrite: str, mode: str = "speed"):
+        """Process a search query and yield intermediate and final results.
+        
+        Yields:
+            int: First yield is the number of relevant documents
+            str: Second yield is the final formatted response
+        """
+        response = search(query_rewrite, self.max_sources)
         self.retriever.add_documents(response)
-        relavant_docs = self.retriever.get_relevant_documents(query)
-        final_response = self.analyze_and_summarize(query, relavant_docs)
-        return final_response
+        relevant_docs = self.retriever.get_relevant_documents(user_query)
+
+        yield len(relevant_docs)
+
+        final_response = self.analyze_and_summarize(user_query, relevant_docs)
+        yield final_response
 
 
 if __name__ == "__main__":

@@ -48,11 +48,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def perform_search(update: Update, query: str) -> None:
     """Perform search and send the result."""
-    await update.message.reply_text("🔍 Searching and processing your query. This may take a moment...")
+    cur_text = "🔍 Searching and processing your query. This may take a moment..."
+    await update.message.reply_text(cur_text)
     
     try:
-        response = search_engine.process_query(query, mode="speed")
-        await update.message.reply_text(response, parse_mode="MarkdownV2", disable_web_page_preview=True)
+        query_rewrite = search_engine.rewrite_query(query)
+        await update.message.reply_text(f'🔍 Searching for "{query_rewrite}"...')
+
+        results_generator = search_engine.process_query(query, query_rewrite, mode="speed")
+
+        doc_count = next(results_generator)
+        await update.message.reply_text(f"Found {doc_count} relevant documents. Analyzing...")
+
+        final_response = next(results_generator)
+        await update.message.reply_text(final_response, parse_mode="MarkdownV2", disable_web_page_preview=True)
     
     except Exception as e:
         logger.error(f"Error processing query: {e}", exc_info=True)
@@ -80,16 +89,16 @@ async def daily_news(context: ContextTypes.DEFAULT_TYPE) -> None:
             query_list = file.readlines()
 
         for query in query_list:
-            # Process the query
-            response = search_engine.process_query(query, mode="speed")
-            
-            # Get the current date for the message
+            query_rewrite = search_engine.rewrite_query(query)
+            results_generator = search_engine.process_query(query, query_rewrite, mode="speed")
+
+            doc_count = next(results_generator)
+            logger.info(f"Found {doc_count} relevant documents for {query}")
+
+            response = next(results_generator)
+
             current_date = datetime.now().strftime("%Y-%m-%d")
-            
-            # Prepare the message
             message = f"📰 Daily Update ({current_date}) 📰\n\n{response}"
-            
-            # Send the message
             await reply_msg(context, message)
     
     except Exception as e:
