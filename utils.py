@@ -109,7 +109,7 @@ def search(query: str, num_results: int) -> List[Document]:
 
 
 class FaissRetriever:
-    def __init__(self, embedding_model, num_candidates: int = 50, sim_threshold: float = 0.4) -> None:
+    def __init__(self, embedding_model, num_candidates: int = 40, sim_threshold: float = 0.45) -> None:
         self.embedding_model = embedding_model
         self.num_candidates = num_candidates
         self.sim_threshold = sim_threshold
