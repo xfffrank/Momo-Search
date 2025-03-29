@@ -117,6 +117,12 @@ class LLMSearch:
 
 if __name__ == "__main__":
     agent = LLMSearch()
-    query = "NVIDIA stock news"
-    ans = agent.process_query(query)
-    print(ans)
+    query = "英伟达今日股价走势"
+    query_rewrite = agent.rewrite_query(query)
+    ans = agent.process_query(query, query_rewrite)
+    
+    doc_count = next(ans)
+    print(f"Found {doc_count} relevant documents")
+
+    final_response = next(ans)
+    print(final_response)
