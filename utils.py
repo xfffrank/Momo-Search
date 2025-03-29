@@ -17,7 +17,7 @@ class Document:
     url: str = ""
     snippet: str = ""
     content: str = ""
-
+    score: float = 0.0
 
 def encode_url(url: str) -> str:
     return urllib.parse.quote(url)
@@ -147,8 +147,19 @@ class FaissRetriever:
         if not self.documents:
             raise ValueError('No documents added to the retriever')
         query_embedding = self.encode_doc(query)
-        D, I = self.index.search(query_embedding.reshape(1, -1), self.num_candidates)
-        top_indices = self.filter_by_sim(D[0], I[0])
+        distances, indices = self.index.search(query_embedding.reshape(1, -1), self.num_candidates)
+
+        # add sim info
+        for idx, sim in enumerate(distances[0]):
+            self.documents[indices[0][idx]].score = sim
+
+        top_indices = self.filter_by_sim(distances[0], indices[0])
         print(f"Found {len(top_indices)} relevant documents")
 
-        return [self.documents[idx] for idx in top_indices]
+        relevant_docs = [self.documents[idx] for idx in top_indices]
+
+        # print titile and sim info
+        for idx, doc in enumerate(relevant_docs):
+            print(f"{idx+1}. {doc.title} (sim: {doc.score:.2f})")
+
+        return relevant_docs
