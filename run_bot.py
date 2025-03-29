@@ -8,6 +8,8 @@ from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandl
 
 from llm_search import LLMSearch
 from config import TELEGRAM_TOKEN, CHAT_ID, DAILY_QUERY_TXT, SCHEDULED_TIME
+from utils import escape_special_chars
+
 
 # Enable logging
 logging.basicConfig(
@@ -89,6 +91,7 @@ async def daily_news(context: ContextTypes.DEFAULT_TYPE) -> None:
             query_list = file.readlines()
 
         for query in query_list:
+            query = query.strip()
             query_rewrite = search_engine.rewrite_query(query)
             results_generator = search_engine.process_query(query, query_rewrite, mode="speed")
 
@@ -98,7 +101,10 @@ async def daily_news(context: ContextTypes.DEFAULT_TYPE) -> None:
             response = next(results_generator)
 
             current_date = datetime.now().strftime("%Y-%m-%d")
-            message = f"📰 Daily Update ({current_date}) 📰\n\n{response}"
+            title = f'📰 Daily Update ({current_date}) for "{query}"'
+            title = escape_special_chars(title)
+
+            message = f"{title}\n\n{response}"
             await reply_msg(context, message)
     
     except Exception as e:
