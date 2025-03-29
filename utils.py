@@ -39,13 +39,17 @@ def escape_special_chars_for_link(text):
     return re.sub(r'([\\)])', r'\\\1', text)
 
 def convert_to_telegram_markdown(text):
-    # Split the text into lines
     lines = text.split('\n')
     result = []
     
     for line in lines:
         line = line.strip()
-        # Process headers
+
+        if '[citation:' in line:
+            # Replace [citation:X] with [X]
+            line = re.sub(r'\[citation:(\d+)\]', r'[\1]', line)
+
+        # Process headers (### becomes bold)
         if line.startswith('### '):
             header_text = line[4:].strip()
             escaped_text = escape_special_chars(header_text)
@@ -54,9 +58,6 @@ def convert_to_telegram_markdown(text):
         # Process bullet points
         elif line.strip().startswith('- '):
             bullet_text = line.strip()[2:]
-            if '[citation:' in bullet_text:
-                # Replace [citation:X] with [X]
-                bullet_text = re.sub(r'\[citation:(\d+)\]', r'[\1]', bullet_text)
             escaped_text = escape_special_chars(bullet_text)
             result.append(f"• {escaped_text}\n")
         
