@@ -86,6 +86,7 @@ class LLMSearch:
         return self.format_llm_response(llm_res.content, response)
     
     def rewrite_query(self, query: str) -> str:
+        # ref: https://github.com/langchain-ai/langchain/blob/master/cookbook/rewrite.ipynb?ref=blog.langchain.dev
         prompt = f"""
             Today is {self.get_today_date()}.
             Provide a better search query for web search engine to answer the given question, end the queries with '**'. 
