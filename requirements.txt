@@ -3,3 +3,4 @@ faiss-cpu
 numpy
 agno
 sentence_transformers
+langchain_text_splitters
