@@ -52,11 +52,12 @@ You can always change the daily query in `daily_query.txt` and the scheduled tim
 - [x] Connect to Telegram bot for query execution and daily digest notification.
 - [x] Return messages in Markdown format.
 - [x] Refine search keywords with LLM.
+- [x] Crawl website content for top N relevant sources.
 - [ ] Stream the response from the Agent.
 - [ ] Auto change the search time range based on the query.
-- [ ] Crawl website content for top N relevant sources.
 - [ ] Perhaps add a website filter to get more authoritative sources.
     * For now, I will focus on the financial domain.
 - [ ] Create a search plan according to the query.
 - [ ] Add "speed" and "deep search" modes to adapt to different queries.
+- [ ] Better logging. (Remove "print", save logs to a file.)
 - [ ] Add more LLMs support.
