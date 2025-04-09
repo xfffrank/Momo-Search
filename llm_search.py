@@ -24,7 +24,7 @@ class LLMSearch:
             )
         )
         self.max_sources = SEARCH_NUM_RESULTS
-        self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2", model_kwargs={"torch_dtype": "float16"})
+        self.embedding_model = SentenceTransformer("BAAI/bge-small-zh-v1.5", model_kwargs={"torch_dtype": "float16"})
         self.retriever = FaissRetriever(self.embedding_model)
     
     def get_today_date(self) -> str:
