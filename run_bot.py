@@ -37,9 +37,23 @@ async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not context.args:
         await update.message.reply_text("Please provide a search query after /search")
         return
+
+    mode = "speed"  # Default mode
+    args = context.args
     
-    query = ' '.join(context.args)
-    await perform_search(update, query)
+    if args[0].lower() in ["-q", "--quality"]:
+        mode = "quality"
+        args = args[1:]  # Remove the mode flag
+    elif args[0].lower() in ["-s", "--speed"]:
+        mode = "speed"
+        args = args[1:]  # Remove the mode flag
+    
+    query = ' '.join(args)
+    if not query:
+        await update.message.reply_text("Please provide a search query after the mode flag")
+        return
+    
+    await perform_search(update, query, mode)
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -48,21 +62,22 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await perform_search(update, query)
 
 
-async def perform_search(update: Update, query: str) -> None:
+async def perform_search(update: Update, query: str, mode: str = "speed") -> None:
     """Perform search and send the result."""
     cur_text = "🔍 Searching and processing your query. This may take a moment..."
-    await update.message.reply_text(cur_text)
+    mode_emoji = "⚡" if mode == "speed" else "✨"
+    await update.message.reply_text(f"{cur_text} Using {mode_emoji} {mode} mode.")
     
     try:
         query_rewrite = search_engine.rewrite_query(query)
         await update.message.reply_text(f'🔍 Searching for "{query_rewrite}"...')
 
-        results_generator = search_engine.process_query(query, query_rewrite, mode="speed")
+        results_generator = search_engine.process_query(query, query_rewrite, mode=mode)
 
-        doc_count = next(results_generator)
+        doc_count = await anext(results_generator)
         await update.message.reply_text(f"Found {doc_count} relevant documents. Analyzing...")
 
-        final_response = next(results_generator)
+        final_response = await anext(results_generator)
         await update.message.reply_text(final_response, parse_mode="MarkdownV2", disable_web_page_preview=True)
     
     except Exception as e:
@@ -111,6 +126,23 @@ async def daily_news(context: ContextTypes.DEFAULT_TYPE) -> None:
         logger.error(f"Error in daily news job: {e}", exc_info=True)
 
 
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Send help message when the command /help is issued."""
+    help_text = (
+        "🤖 *Search Bot Commands* 🤖\n\n"
+        "- /start - Start the bot\n"
+        "- /search [query] - Search with default speed mode\n"
+        "- /search -q [query] - Search with quality mode (more thorough but slower)\n"
+        "- /search -s [query] - Search with speed mode (faster but less detailed)\n"
+        "- /news - Fetch the daily news update\n"
+        "- /help - Show this help message\n\n"
+        "*Search Modes:*\n"
+        "⚡ *Speed mode*: Faster results but may be less comprehensive\n"
+        "✨ *Quality mode*: More detailed results with web page crawling for better analysis"
+    )
+    await update.message.reply_text(help_text, parse_mode="Markdown")
+
+
 def setup_daily_job(application: Application) -> None:
     job_queue = application.job_queue
     local_tz = datetime.now().astimezone().tzinfo
@@ -128,6 +160,7 @@ def main() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("search", search_command))
     application.add_handler(CommandHandler("news", daily_news_command))
+    application.add_handler(CommandHandler("help", help_command))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     setup_daily_job(application)
