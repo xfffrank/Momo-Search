@@ -130,7 +130,8 @@ class FaissRetriever:
         
         self.reset_state()
         self.documents = documents
-        doc_embeddings = self.encode_doc([doc.snippet for doc in documents])
+        doc_embeddings = self.encode_doc(
+            [doc.content if doc.content else doc.snippet for doc in documents])
         self.index.add(doc_embeddings)
     
     def filter_by_sim(self, distances: np.ndarray, indices: np.ndarray) -> np.ndarray:

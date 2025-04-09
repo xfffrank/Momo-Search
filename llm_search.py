@@ -1,3 +1,4 @@
+import asyncio
 from os import environ
 from typing import List
 from datetime import datetime
@@ -8,24 +9,35 @@ from sentence_transformers import SentenceTransformer
 
 from utils import (search, FaissRetriever, Document, convert_to_telegram_markdown, 
                    escape_special_chars, escape_special_chars_for_link)
-from config import OPENAI_LIKE_API_KEY, OPENAI_LIKE_BASE_URL, MODEL_ID, SEARCH_NUM_RESULTS
-
+from retriever import expand_docs_by_text_split, merge_docs_by_url
+from config import OPENAI_LIKE_API_KEY, OPENAI_LIKE_BASE_URL, SEARCH_NUM_RESULTS, model_dict
+from crawl import Crawler
 
 environ['TOKENIZERS_PARALLELISM'] = "false"
 
 
 class LLMSearch:
     def __init__(self):
-        self.agent = Agent(
+        self.rewriter = Agent(
             model=OpenAILike(
-                id=MODEL_ID,
+                id=model_dict["query_rewriter"],
                 api_key=OPENAI_LIKE_API_KEY,
                 base_url=OPENAI_LIKE_BASE_URL,
             )
         )
+
+        self.chat = Agent(
+            model=OpenAILike(
+                id=model_dict["chat"],
+                api_key=OPENAI_LIKE_API_KEY,
+                base_url=OPENAI_LIKE_BASE_URL,
+            )
+        )
+
         self.max_sources = SEARCH_NUM_RESULTS
         self.embedding_model = SentenceTransformer("BAAI/bge-small-zh-v1.5", model_kwargs={"torch_dtype": "float16"})
         self.retriever = FaissRetriever(self.embedding_model)
+        self.crawler = Crawler()
     
     def get_today_date(self) -> str:
         return datetime.today().strftime('%Y-%m-%d')
@@ -77,12 +89,13 @@ class LLMSearch:
         return f"{llm_ans}\n\n{citation_str}"
 
     def analyze_and_summarize(self, query: str, response: List[Document]) -> str:
-        formatted_sources = self.format_sources([data.snippet for data in response])
+        formatted_sources = self.format_sources(
+            [data.content if data.content else data.snippet for data in response])
         cur_date = self.get_today_date()
         prompt = self.format_prompt(formatted_sources, query, cur_date)
-        print(f'Prompt: {prompt}')
+        print(f'Prompt:\n {prompt}')
         
-        llm_res = self.agent.run(prompt)
+        llm_res = self.chat.run(prompt)
         return self.format_llm_response(llm_res.content, response)
     
     def rewrite_query(self, query: str) -> str:
@@ -93,16 +106,16 @@ class LLMSearch:
         在回答时，请注意以下几点：
         - 除改写后的查询外，回答中请勿包含任何其他文本。
         - 除非用户要求，否则你回答的语言需要和用户提问的语言保持一致。
-        
+
         问题：{query} 回答：
         """
-        res = self.agent.run(prompt).content
-        top_query = res.split('\n')[0].replace('**', '')
+        res = self.rewriter.run(prompt).content
+        top_query = res.strip().replace('**', '')
         print(f'Original Query: {query}')
         print(f'Query Rewrite: {top_query}')
         return top_query
 
-    def process_query(self, user_query: str, query_rewrite: str, mode: str = "speed"):
+    async def process_query(self, user_query: str, query_rewrite: str, mode: str = "speed"):
         """Process a search query and yield intermediate and final results.
         
         Yields:
@@ -115,18 +128,31 @@ class LLMSearch:
 
         yield len(relevant_docs)
 
-        final_response = self.analyze_and_summarize(user_query, relevant_docs)
-        yield final_response
+        if mode == "speed":
+            final_response = self.analyze_and_summarize(user_query, relevant_docs)
+            yield final_response
+        elif mode == "quality":
+            await self.crawler.crawl_many(relevant_docs)
+            docs_w_details = expand_docs_by_text_split(relevant_docs)
 
+            self.retriever.add_documents(docs_w_details)
+            relevant_docs_detailed = self.retriever.get_relevant_documents(user_query)
+            relevant_docs_final = merge_docs_by_url(relevant_docs_detailed)
 
-if __name__ == "__main__":
+            final_response = self.analyze_and_summarize(user_query, relevant_docs_final)
+            yield final_response
+            
+
+async def demo():
     agent = LLMSearch()
     query = "英伟达今日股价走势"
     query_rewrite = agent.rewrite_query(query)
-    ans = agent.process_query(query, query_rewrite)
-    
-    doc_count = next(ans)
+    ans = agent.process_query(query, query_rewrite, mode="speed")
+    doc_count = await anext(ans)
     print(f"Found {doc_count} relevant documents")
-
-    final_response = next(ans)
+    final_response = await anext(ans)
     print(final_response)
+
+
+if __name__ == "__main__":
+    asyncio.run(demo())
