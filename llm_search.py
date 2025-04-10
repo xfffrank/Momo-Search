@@ -26,13 +26,16 @@ class LLMSearch:
             )
         )
 
-        self.chat = Agent(
-            model=OpenAILike(
-                id=model_dict["chat"],
-                api_key=OPENAI_LIKE_API_KEY,
-                base_url=OPENAI_LIKE_BASE_URL,
+        self.chat = {
+            "speed": self.rewriter,
+            "quality": Agent(
+                model=OpenAILike(
+                    id=model_dict["chat"],
+                    api_key=OPENAI_LIKE_API_KEY,
+                    base_url=OPENAI_LIKE_BASE_URL,
+                )
             )
-        )
+        }
 
         self.max_sources = SEARCH_NUM_RESULTS
         self.embedding_model = SentenceTransformer("BAAI/bge-small-zh-v1.5", model_kwargs={"torch_dtype": "float16"})
@@ -88,14 +91,14 @@ class LLMSearch:
         print(f'Citation: \n{citation_str}')
         return f"{llm_ans}\n\n{citation_str}"
 
-    def analyze_and_summarize(self, query: str, response: List[Document]) -> str:
+    def analyze_and_summarize(self, query: str, response: List[Document], mode: str = "speed") -> str:
         formatted_sources = self.format_sources(
             [data.content if data.content else data.snippet for data in response])
         cur_date = self.get_today_date()
         prompt = self.format_prompt(formatted_sources, query, cur_date)
         print(f'Prompt:\n {prompt}')
         
-        llm_res = self.chat.run(prompt)
+        llm_res = self.chat[mode].run(prompt)
         return self.format_llm_response(llm_res.content, response)
     
     def rewrite_query(self, query: str) -> str:
@@ -129,7 +132,7 @@ class LLMSearch:
         yield len(relevant_docs)
 
         if mode == "speed":
-            final_response = self.analyze_and_summarize(user_query, relevant_docs)
+            final_response = self.analyze_and_summarize(user_query, relevant_docs, mode)
             yield final_response
         elif mode == "quality":
             await self.crawler.crawl_many(relevant_docs)
@@ -139,7 +142,7 @@ class LLMSearch:
             relevant_docs_detailed = self.retriever.get_relevant_documents(user_query)
             relevant_docs_final = merge_docs_by_url(relevant_docs_detailed)
 
-            final_response = self.analyze_and_summarize(user_query, relevant_docs_final)
+            final_response = self.analyze_and_summarize(user_query, relevant_docs_final, mode)
             yield final_response
             
 
