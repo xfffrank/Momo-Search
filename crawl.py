@@ -73,6 +73,7 @@ class Crawler:
             with open('proxy.txt', 'r') as f:
                 return f.read().split('\n')
         else:
+            # credit to https://github.com/TheSpeedX/PROXY-List
             url = "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/http.txt"
             response = requests.get(url)
             with open('proxy.txt', 'w') as f:
