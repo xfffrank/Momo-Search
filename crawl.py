@@ -82,7 +82,7 @@ class Crawler:
     async def crawl_many(self, docs: List[Document]):
         # filter urls by checking if the url contains any of the keys in self.elements_dict
         filtered_docs = [doc for doc in docs if any(key in doc.url for key in self.elements_dict) and doc.score > 0.5]
-        print(f"Crawling {len(filtered_docs)} documents")
+        print(f"Crawling {len(filtered_docs)} sources")
         if not filtered_docs:
             return
 

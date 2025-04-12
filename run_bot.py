@@ -75,7 +75,7 @@ async def perform_search(update: Update, query: str, mode: str = "speed") -> Non
         results_generator = search_engine.process_query(query, query_rewrite, mode=mode)
 
         doc_count = await anext(results_generator)
-        await update.message.reply_text(f"Found {doc_count} relevant documents. Analyzing...")
+        await update.message.reply_text(f"Found {doc_count} relevant sources. Analyzing...")
 
         final_response = await anext(results_generator)
         await update.message.reply_text(final_response, parse_mode="MarkdownV2", disable_web_page_preview=True)
@@ -111,7 +111,7 @@ async def daily_news(context: ContextTypes.DEFAULT_TYPE) -> None:
             results_generator = search_engine.process_query(query, query_rewrite, mode="speed")
 
             doc_count = await anext(results_generator)
-            logger.info(f"Found {doc_count} relevant documents for {query}")
+            logger.info(f"Found {doc_count} relevant sources for {query}")
 
             response = await anext(results_generator)
 

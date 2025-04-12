@@ -152,7 +152,7 @@ async def demo():
     query_rewrite = agent.rewrite_query(query)
     ans = agent.process_query(query, query_rewrite, mode="speed")
     doc_count = await anext(ans)
-    print(f"Found {doc_count} relevant documents")
+    print(f"Found {doc_count} relevant sources")
     final_response = await anext(ans)
     print(final_response)
 
