@@ -25,7 +25,7 @@ MODEL_ID = ""
 ```
 
 ## Usage
-1. Demo. This will trigger a search for the query "NVIDIA stock news".
+1. Demo. This will trigger a search for the query "NVIDIA stock news today".
 ```bash
 python llm_search.py
 ```

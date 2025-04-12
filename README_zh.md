@@ -25,7 +25,7 @@ MODEL_ID = ""                    # 模型ID
 ```
 
 ## 使用指南
-1. 运行演示（将自动搜索 "NVIDIA stock news"）
+1. 运行演示（将自动搜索 "英伟达今日股价走势"）
 ```bash
 python llm_search.py
 ```

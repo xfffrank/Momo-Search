@@ -10,7 +10,7 @@ from sentence_transformers import SentenceTransformer
 from utils import (search, FaissRetriever, Document, convert_to_telegram_markdown, 
                    escape_special_chars, escape_special_chars_for_link)
 from retriever import expand_docs_by_text_split, merge_docs_by_url
-from config import OPENAI_LIKE_API_KEY, OPENAI_LIKE_BASE_URL, SEARCH_NUM_RESULTS, model_dict
+from config import OPENAI_LIKE_API_KEY, OPENAI_LIKE_BASE_URL, SEARCH_NUM_RESULTS, model_dict, LANGUAGE
 from crawl import Crawler
 
 environ['TOKENIZERS_PARALLELISM'] = "false"
@@ -148,7 +148,7 @@ class LLMSearch:
 
 async def demo():
     agent = LLMSearch()
-    query = "英伟达今日股价走势"
+    query = "英伟达今日股价走势" if LANGUAGE == "zh" else "NVIDIA stock news today"
     query_rewrite = agent.rewrite_query(query)
     ans = agent.process_query(query, query_rewrite, mode="speed")
     doc_count = await anext(ans)
