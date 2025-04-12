@@ -110,10 +110,10 @@ async def daily_news(context: ContextTypes.DEFAULT_TYPE) -> None:
             query_rewrite = search_engine.rewrite_query(query)
             results_generator = search_engine.process_query(query, query_rewrite, mode="speed")
 
-            doc_count = next(results_generator)
+            doc_count = await anext(results_generator)
             logger.info(f"Found {doc_count} relevant documents for {query}")
 
-            response = next(results_generator)
+            response = await anext(results_generator)
 
             current_date = datetime.now().strftime("%Y-%m-%d")
             title = f'📰 Daily Update ({current_date}) for "{query}"'
