@@ -1,7 +1,7 @@
-# Zen
+# Momo Search
 English | [中文](README_zh.md)
 
-Zen is a LLM-powered daily digest tool. It saves you time by providing insights from the latest news for better decision-making.
+Momo Search is a LLM-powered daily digest tool. It saves you time by providing insights from the latest news for better decision-making.
 
 ## Installation
 ```bash
