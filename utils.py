@@ -38,6 +38,20 @@ def escape_special_chars_for_link(text):
     # all ')' and '\' must be escaped with a preceding '\' character.
     return re.sub(r'([\\)])', r'\\\1', text)
 
+def process_bold_text(text):
+    # Replace **text** with *escaped_text*
+    processed_text = re.sub(r'\*\*(.*?)\*\*', lambda m: f"*{escape_special_chars(m.group(1))}*", text)
+    # Escape any remaining text that's not already within * markers
+    parts = []
+    in_bold = False
+    for part in processed_text.split('*'):
+        if in_bold:
+            parts.append(f"*{part}*")
+        else:
+            parts.append(escape_special_chars(part))
+        in_bold = not in_bold
+    return ''.join(parts)
+
 def convert_to_telegram_markdown(text):
     lines = text.split('\n')
     result = []
@@ -50,16 +64,27 @@ def convert_to_telegram_markdown(text):
             line = re.sub(r'\[citation:(\d+)\]', r'[\1]', line)
 
         # Process headers (### becomes bold)
-        if line.startswith('### '):
-            header_text = line[4:].strip()
-            escaped_text = escape_special_chars(header_text)
-            result.append(f"*{escaped_text}*\n")
+        if line.startswith('#'):
+            header_text = line.strip('#').strip()
+
+            # Process bold text within headers
+            if '**' in header_text:
+                header_text = process_bold_text(header_text)
+            else:
+                header_text = escape_special_chars(header_text)
+                header_text = f"*{header_text}*"
+
+            result.append(f"{header_text}\n")
         
         # Process bullet points
         elif line.strip().startswith('- '):
             bullet_text = line.strip()[2:]
-            escaped_text = escape_special_chars(bullet_text)
-            result.append(f"• {escaped_text}\n")
+            if '**' in bullet_text:
+                bullet_text = process_bold_text(bullet_text)
+            else:
+                bullet_text = escape_special_chars(bullet_text)
+
+            result.append(f"• {bullet_text}\n")
         
         # Process horizontal rules (---)
         elif line.strip() == '---':
