@@ -21,7 +21,8 @@ TIME_RANGE = "week"  # "day", "week", "month", "year" or "" for any time
 ```python
 OPENAI_LIKE_API_KEY = ""
 OPENAI_LIKE_BASE_URL = ""
-MODEL_ID = ""
+DEEPSEEK_R1 = ""  # model id for deepseek-r1
+DEEPSEEK_V3 = ""  # model id for deepseek-v3
 ```
 
 ## Usage

@@ -21,7 +21,8 @@ TIME_RANGE = "week" # 时间范围："day"（天）、"week"（周）、"month"�
 ```python
 OPENAI_LIKE_API_KEY = ""         # API 密钥
 OPENAI_LIKE_BASE_URL = ""        # API 基础地址
-MODEL_ID = ""                    # 模型ID
+DEEPSEEK_R1 = ""                 # deepseek-r1 模型ID
+DEEPSEEK_V3 = ""                 # deepseek-v3 模型ID
 ```
 
 ## 使用指南
